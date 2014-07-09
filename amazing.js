@@ -198,107 +198,105 @@
     }
   },
   noop = function() {},
-  //https://gist.github.com/cms/369133
-  getStyle = function(el, styleProp) {
-    var value, defaultView = el.ownerDocument.defaultView;
-    // W3C standard way:
-    if (defaultView && defaultView.getComputedStyle) {
-      // sanitize property name to css notation (hypen separated words eg. font-Size)
-      styleProp = styleProp.replace(/([A-Z])/g, "-$1").toLowerCase();
-      return defaultView.getComputedStyle(el, null).getPropertyValue(styleProp);
-    } else if (el.currentStyle) { // IE
-      // sanitize property name to camelCase
-      styleProp = styleProp.replace(/\-(\w)/g, function(str, letter) {
-        return letter.toUpperCase();
-      });
-      value = el.currentStyle[styleProp];
-      // convert other units to pixels on IE
-      if ((/^\d+(em|pt|%|ex)?$/i).test(value)) {
-        return (function(value) {
-          var oldLeft = el.style.left,
-          oldRsLeft = el.runtimeStyle.left;
-          el.runtimeStyle.left = el.currentStyle.left;
-          el.style.left = value || 0;
-          value = el.style.pixelLeft + "px";
-          el.style.left = oldLeft;
-          el.runtimeStyle.left = oldRsLeft;
-          return value;
-        })(value);
+  timeout = function(w, a) {
+    return w["webkitR" + a] || w["r" + a] || w["mozR" + a] || w["msR" + a] || w["oR" + a];
+  } (window, "equestAnimationFrame") || function(callback) {
+    setTimeout(callback, 16);
+  },
+  RGBA = /#(.)(.)(.)\b|#(..)(..)(..)\b|(\d+)%,(\d+)%,(\d+)%(?:,([\d\.]+))?|(\d+),(\d+),(\d+)(?:,([\d\.]+))?\b/,
+  toRGBA = function(s) {
+    var v = [0, 0, 0, 0];
+    s.replace(/\s/g, "").replace(RGBA, function(i, a, b, c, f, g, h, l, m, n, o, w, x, y, z) {
+      h = [a + a || f, b + b || g, c + c || h];
+      p = [l, m, n];
+
+      for (i = 0; i < 3; i++) {
+        h[i] = parseInt(h[i], 16);
+        p[i] = Math.round(p[i] * 2.55);
       }
-      return value;
-    }
+      v = [h[0] || p[0] || w || 0, h[1] || p[1] || x || 0, h[2] || p[2] || y || 0, o || z || 1];
+    });
+    return v;
   },
-  requestAnimFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(callback) {
-    window.setTimeout(function() {
-      callback();
+  _fxWH = function(o, n, to, fr, a, e) {
+    if (! (o._fr >= 0)) o._fr = ! isNaN(fr = parseFloat(fr)) ? fr: a == "width" ? n.clientWidth: n.clientHeight;
+    _fx._(o, n, to, o._fr, a, e);
+  },
+  _fx = {
+    _: function(o, n, to, fr, a, e) {
+      fr = parseFloat(fr) || 0;
+      to = parseFloat(to) || 0;
+      o.s[a] = (o.p >= 1 ? to: (o.p * (to - fr) + fr)) + o.u;
     },
-    16);
-  },
-  _animItems = [],
-  _timerAnim = function() {
+    'width': _fxWH,
+    'height': _fxWH,
+    'opacity': function(o, n, to, fr, a, e) {
+      if (isNaN(fr = fr || o._fr)) {
+        fr = n.style;
+        fr.zoom = 1;
+        fr = o._fr = (/alpha\(opacity=(\d+)\b/i.exec(fr.filter) || {})[1] / 100 || 1;
+      }
+      fr *= 1;
+      to = (o.p * (to - fr) + fr);
+      n = n.style;
+      if (a in n) {
+        n[a] = to;
+      } else {
+        n.filter = to >= 1 ? "": "alpha(" + a + "=" + Math.round(to * 100) + ")";
+      }
+    },
+    'color': function(o, n, to, fr, a, e, i, v) {
+      if (!o.ok) {
+        to = o.to = A.toRGBA(to);
+        fr = o.fr = A.toRGBA(fr);
+        if (to[3] === 0) {
+          to = [].concat(fr);
+          to[3] = 0;
+        }
+        if (fr[3] === 0) {
+          fr = [].concat(to);
+          fr[3] = 0;
+        }
+        o.ok = 1;
+      }
 
-  },
-  _removeAnim = function(finished, item) {
-    item.callback(finished, item.elm);
-  },
-  _anim = function(elm, properties, options) {
-    //检查elm是否已经存在动画,存在的就过滤掉
-    var props = {};
-    var hasAnim = filter(_animItems, function(item) {
-      return item.elm == elm;
-    });
+      v = [0, 0, 0, o.p * (to[3] - fr[3]) + 1 * fr[3]];
+      for (i = 2; i >= 0; i--) v[i] = Math.round(o.p * (to[i] - fr[i]) + 1 * fr[i]);
 
-    if (hasAnim.length) {
-      forEach(hasAnim, function(item, index) {
-        //停止所有elm正在执行的动画,执行callback
-        _removeAnim(false, item);
-      });
+      if (v[3] >= 1 || A.rgbaIE) v.pop();
+
+      try {
+        o.s[a] = (v.length > 3 ? "rgba(": "rgb(") + v.join(",") + ")";
+      } catch(e) {
+        A.rgbaIE = 1;
+      }
     }
-
-    for(var property in properties){
-      //需要修正单位，color值
-      props[property] = {
-        currentProperty:getStyle(elm,property),
-        endProperty:properties[property]
-      };
-    }
-
-    _animItems.push({
-      elm: elm,
-      properties: props,
-      callback: options.callback || noop,
-      duration: options.duration || 400
-    });
-
-    requestAnimFrame(_timerAnim);
   };
 
-  function amazing() {
-    this.map = {};
+  function amazing(node) {
+    this.node = node;
+    this.queue = [];
     this.version = '0.0.1';
   }
 
   amazing.prototype = {
     constructor: amazing,
     easeing: easeing,
-    trigger: function(name, args) {
-      var self = this,
-      cbs = this.map[name];
-      if (cbs) {
-        forEach(cbs, function(fn) {
-          fn.apply(this, args);
-        });
-      }
+    animate: function(properties) {
+      return this;
     },
-    on: function(name, cb) {
-      if (this.map[name]) {
-        this.map[name].push(cb);
-      } else {
-        this.map[name] = [cb];
-      }
+    wait: function(timer) {
+      return this;
     },
-    animate: _anim
+    pause: function() {
+      return this;
+    },
+    begin: function() {
+      return this;
+    }
   };
+
   global.amazing = amazing;
+
 })(this);
 
