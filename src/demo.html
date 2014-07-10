@@ -1,0 +1,23 @@
+<html>
+  <head></head>
+  <body>
+    <div style="background:red;" id="test"></div>
+    <script src="./amazing.js"></script>
+    <script>
+      amazing(document.getElementById('test'), {
+        source: {
+          width: '100px'
+        },
+        to: {
+          width:'300px',
+          height:'300px',
+        },
+        duration: 1000
+      },
+      function() {
+        console.log('end');
+      });
+
+    </script>
+  </body>
+</html>
