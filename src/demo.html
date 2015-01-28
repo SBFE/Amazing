@@ -2,8 +2,15 @@
   <head></head>
   <body>
     <div style="background:red;" id="test"></div>
+    <div style="background:#000;" id="test2"></div>
+    <div style="position:absolute;left:200px;top:200px;">
+    <input type="button" value="stop" id="stop">
+    <input type="button" value="play" id="play">
+    <input type="button" value="replay" id="replay">
+    </div>
     <script src="./amazing.js"></script>
     <script>
+      /*
       amazing(document.getElementById('test'), {
         source: {
           width: '100px'
@@ -18,6 +25,49 @@
         console.log('end');
       });
 
+      amazing(document.getElementById('test2'), {
+        source:{
+          backgroundColor:'#606069' 
+        },
+        to: {
+          width:'500px',
+          height:'800px',
+          backgroundColor:'#000'
+        },
+        duration: 1000
+      },
+      function() {
+        console.log('end');
+      });
+      */
+      
+      var $ = function(id){
+         return document.getElementById(id);
+      };
+      
+      var move1 = new Amazing({
+        node:$('test'),
+        source: {
+          width: '100px'
+        },
+        to: {
+          width:'300px',
+          height:'300px',
+        },
+        duration: 4000,
+        callback:function(){
+          console.log('end');
+        }
+      });
+      $('play').onclick = function(){
+        move1.play(); 
+      };
+      $('stop').onclick = function(){
+        move1.stop(); 
+      };
+      $('replay').onclick = function(){
+        move1.replay(); 
+      };
     </script>
   </body>
 </html>
