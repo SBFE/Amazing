@@ -1,13 +1,15 @@
 <html>
   <head></head>
   <body>
-    <div style="background:red;" id="test"></div>
+    <div style="background:red;width:500px;height:500px;" id="test"></div>
     <div style="background:#000;" id="test2"></div>
     <div style="position:absolute;left:200px;top:200px;">
     <input type="button" value="start" id="start">
     <input type="button" value="stop" id="stop">
     <input type="button" value="play" id="play">
-    <input type="button" value="replay" id="replay">
+    <input type="button" value="restart" id="restart">
+    <input type="button" value="cancel" id="cancel">
+    <input type="button" value="reverse" id="reverse">
     </div>
     <script src="./amazing.js"></script>
     <script>
@@ -61,6 +63,10 @@
         }
       });
 
+
+      $('reverse').onclick = function(){
+        move1.reverse(); 
+      };
       $('start').onclick = function(){
         move1.start(); 
       };
@@ -70,8 +76,11 @@
       $('stop').onclick = function(){
         move1.stop(); 
       };
-      $('replay').onclick = function(){
-        move1.replay(); 
+      $('restart').onclick = function(){
+        move1.restart(); 
+      };
+      $('cancel').onclick = function(){
+        move1.cancel();
       };
     </script>
   </body>

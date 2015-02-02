@@ -1,3 +1,9 @@
+/**
+ * @author xiaojue[designsor@gmail.com]
+ * @fileoverview amazing tween
+ * @date 20150202
+ */
+
 (function(global) {
   var easeings = {
     swing: function(x, t, b, c, d) {
@@ -25,11 +31,17 @@
     return v;
   };
 
+  function setToStyle(node,to){
+    for(var i in to){
+      node.style[i] = to[i];
+    }
+  }
+
   function getSourceStyle(node, style) {
     return (global.getComputedStyle ? getComputedStyle(node, null) : node.currentStyle)[style];
   }
 
-  var setStyle = function(node, source, to, t, duration) {
+  function setStyle(node, source, to, t, duration, ease) {
     source = source ? source: {};
     var curto, curso, target, setvalue, units;
     for (var i in to) {
@@ -52,38 +64,14 @@
         units = ((/\d(\D+)$/).exec(to[i]) || (/\d(\D+)$/).exec(source[i]) || [0, 0])[1]; //units (px, %)
         curto = parseInt(to[i], 10);
         curso = parseInt(source[i], 10);
-        target = easeings['easeInQuad']((1 - (t / duration)).toFixed(1), duration - t, 0, curto - curso, duration);
+        target = easeings[ease]((1 - (t / duration)).toFixed(1), duration - t, 0, curto - curso, duration);
         setvalue = parseInt(curso + target, 10);
-        setvalue = setvalue > curto ? curto: setvalue;
+        //setvalue = setvalue > curto ? curto: setvalue;
         setvalue += units;
       }
       node.style[i] = setvalue;
     }
-  };
-
-  function events() {
-    this.map = {};
   }
-
-  events.prototype = {
-    constructor: events,
-    trigger: function(name, args) {
-      var self = this,
-      cbs = this.map[name];
-      if (cbs) {
-        forEach(cbs, function(fn) {
-          fn.apply(this, args);
-        });
-      }
-    },
-    on: function(name, cb) {
-      if (this.map[name]) {
-        this.map[name].push(cb);
-      } else {
-        this.map[name] = [cb];
-      }
-    }
-  };
 
   //https://gist.github.com/paulirish/1579671 
   var lastTime = 0;
@@ -120,7 +108,7 @@
     }
   }
 
-  var expand = function(pros) {
+  function expand(pros) {
     var fixs = {
       'margin': function(val) {
         fixMP('margin', val, pros);
@@ -146,28 +134,107 @@
         delete pros[pro];
       }
     }
-  };
+  }
 
-  var batch = function(item) {
-    expand(item.source);
-    expand(item.to);
-  };
-
-  var configure = function(params) {
+  function configure(params) {
     return {
       node: params.node,
       source: params.source,
       to: params.to,
-      duration: params.duration || 500,
       ease: params.ease || 'swing',
       cb: params.callback
     };
+  }
+
+  function Amazing(params) {
+    this.queueItem = configure(params);
+    this.fps = params.fps || 60;
+    this.duration = params.duration || 500;
+    this.timer = null;
+    this.isrun = false;
+    this.end = false;
+    this.playTime = this.stopTime = this.currFrame = 0;
+    expand(this.queueItem.source);
+    expand(this.queueItem.to);
+  }
+
+  function now() {
+    return new Date().valueOf();
+  }
+
+  function setEnd() {
+    this.isrun = false;
+    this.end = true;
+  }
+
+  function run() {
+    var item = this.queueItem,
+    self = this;
+
+    this.isrun = true;
+
+    var t = this.endTime - now();
+    if (this.currFrame === this.frames) {
+      //有偏差->一次性设置成to得状态
+      setToStyle(item.node,item.to);  
+      if (item.cb) item.cb();
+      setEnd.call(this);
+      return;
+    } else {
+      this.timer = requestAnimationFrame(function() {
+        run.call(self);
+      });
+    }
+    this.currFrame++;
+    setStyle(item.node, item.source, item.to, t, this.duration, item.ease);
+  }
+
+  Amazing.prototype = {
+    constructor: Amazing,
+    start: function(cb) {
+      if (this.isrun || this.end) return;
+      this.startTime = now();
+      this.endTime = this.startTime + this.duration;
+      this.frames = Math.ceil(this.duration * this.fps / 1000);
+      run.call(this);
+    },
+    restart: function() {
+      this.cancel();
+      this.end = false;
+      this.start();
+    },
+    play: function() {
+      if (this.isrun || this.end) return;
+      this.playTime = now();
+      this.endTime = this.endTime - this.stopTime + this.playTime;
+      this.stopTime = 0;
+      run.call(this);
+    },
+    stop: function() {
+      this.isrun = false;
+      cancelAnimationFrame(this.timer);
+      this.stopTime = now();
+    },
+    cancel: function() {
+      this.currFrame = 0;
+      cancelAnimationFrame(this.timer);
+      setEnd.call(this);
+    },
+    reverse: function() {
+      var to = clone(this.queueItem.to);
+      var source = clone(this.queueItem.source);
+      this.queueItem.source = to;
+      this.queueItem.to = source;
+      this.restart();
+    }
   };
 
   function clone(obj) {
+    var copy;
+
     // Handle the 3 simple types, and null or undefined
     if (null === obj || "object" != typeof obj) return obj;
-    var copy;
+
     // Handle Date
     if (obj instanceof Date) {
       copy = new Date();
@@ -178,7 +245,7 @@
     // Handle Array
     if (obj instanceof Array) {
       copy = [];
-      for (var i = 0, len = obj.length; i < len; ++i) {
+      for (var i = 0, len = obj.length; i < len; i++) {
         copy[i] = clone(obj[i]);
       }
       return copy;
@@ -195,76 +262,6 @@
 
     throw new Error("Unable to copy obj! Its type isn't supported.");
   }
-
-  function Amazing(params) {
-    this.events = new events();
-    this.queueItem = configure(params);
-    this.fps = 60;
-    this.currFrame = 0;
-    this.duration = params.duration;
-    this.timer = null;
-    this.playTime = 0;
-    this.stopTime = 0;
-    this.started = false;
-    batch(this.queueItem);
-  }
-
-  function now(){
-    return new Date().valueOf(); 
-  }
-
-  Amazing.prototype = {
-    constructor: Amazing,
-    stop: function() {
-      var self = this;
-      if(!self.started) return;
-      cancelAnimationFrame(self.timer);
-      self.stopTime = now();
-    },
-    run: function() {
-      var item = this.queueItem,
-      self = this;
-      if(!self.started) return;
-
-      self.t = self.endTime - now();
-      if (self.currFrame >= self.frames) {
-        if (item.cb) item.cb();
-        self.events.trigger('end');
-        self.started = false;
-        return;
-      } else {
-        self.timer = requestAnimationFrame(function() {
-          self.run();
-        });
-      }
-      self.currFrame++;
-      setStyle(item.node, item.source, item.to, self.t, self.duration);
-      self.events.trigger('move', [self.t, item.source, item.to]);
-    },
-    play:function(){
-      var self = this;
-      if(!self.started) return;
-      self.playTime = now();
-      self.endTime = self.endTime - self.stopTime + self.playTime;
-      self.stopTime = 0;
-      self.run(); 
-    },
-    replay: function() {
-      var self = this;
-      self.currFrame = 0;
-      cancelAnimationFrame(self.timer);
-      self.start();
-    },
-    start: function() {
-      var item = this.queueItem,
-      self = this;
-      self.startTime = now();
-      self.endTime = self.startTime + self.duration;
-      self.frames = Math.ceil(self.duration * self.fps / 1000);
-      this.started = true;
-      self.run();
-    }
-  };
 
   global.Amazing = Amazing;
 
