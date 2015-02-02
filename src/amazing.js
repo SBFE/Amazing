@@ -25,8 +25,8 @@
     return v;
   };
 
-  function getSourceStyle(node,style){
-      return (global.getComputedStyle ? getComputedStyle(node, null) : node.currentStyle)[style];
+  function getSourceStyle(node, style) {
+    return (global.getComputedStyle ? getComputedStyle(node, null) : node.currentStyle)[style];
   }
 
   var setStyle = function(node, source, to, t, duration) {
@@ -34,7 +34,7 @@
     var curto, curso, target, setvalue, units;
     for (var i in to) {
       if (!source[i]) {
-        source[i] = getSourceStyle(node,i);
+        source[i] = getSourceStyle(node, i);
       }
       //判断透明度，color
       if ((/color/i).test(i)) { //只转换一次,做标记
@@ -52,7 +52,7 @@
         units = ((/\d(\D+)$/).exec(to[i]) || (/\d(\D+)$/).exec(source[i]) || [0, 0])[1]; //units (px, %)
         curto = parseInt(to[i], 10);
         curso = parseInt(source[i], 10);
-        target = easeings['swing']((1 - (t / duration)).toFixed(1), duration - t, 0, curto - curso, duration);
+        target = easeings['easeInQuad']((1 - (t / duration)).toFixed(1), duration - t, 0, curto - curso, duration);
         setvalue = parseInt(curso + target, 10);
         setvalue = setvalue > curto ? curto: setvalue;
         setvalue += units;
@@ -153,7 +153,7 @@
     expand(item.to);
   };
 
-  var configure = function(params){
+  var configure = function(params) {
     return {
       node: params.node,
       source: params.source,
@@ -170,27 +170,27 @@
     var copy;
     // Handle Date
     if (obj instanceof Date) {
-        copy = new Date();
-        copy.setTime(obj.getTime());
-        return copy;
+      copy = new Date();
+      copy.setTime(obj.getTime());
+      return copy;
     }
 
     // Handle Array
     if (obj instanceof Array) {
-        copy = [];
-        for (var i = 0, len = obj.length; i < len; ++i) {
-            copy[i] = clone(obj[i]);
-        }
-        return copy;
+      copy = [];
+      for (var i = 0, len = obj.length; i < len; ++i) {
+        copy[i] = clone(obj[i]);
+      }
+      return copy;
     }
 
     // Handle Object
     if (obj instanceof Object) {
-        copy = {};
-        for (var attr in obj) {
-            if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
-        }
-        return copy;
+      copy = {};
+      for (var attr in obj) {
+        if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
+      }
+      return copy;
     }
 
     throw new Error("Unable to copy obj! Its type isn't supported.");
@@ -199,42 +199,74 @@
   function Amazing(params) {
     this.events = new events();
     this.queueItem = configure(params);
+    this.fps = 60;
+    this.currFrame = 0;
+    this.duration = params.duration;
     this.timer = null;
+    this.playTime = 0;
+    this.stopTime = 0;
+    this.started = false;
+    batch(this.queueItem);
+  }
+
+  function now(){
+    return new Date().valueOf(); 
   }
 
   Amazing.prototype = {
     constructor: Amazing,
     stop: function() {
-      if(this.timer){
-        cancelAnimationFrame(this.timer);
-        this.events.trigger('stop');
+      var self = this;
+      if(!self.started) return;
+      cancelAnimationFrame(self.timer);
+      self.stopTime = now();
+    },
+    run: function() {
+      var item = this.queueItem,
+      self = this;
+      if(!self.started) return;
+
+      self.t = self.endTime - now();
+      if (self.currFrame >= self.frames) {
+        if (item.cb) item.cb();
+        self.events.trigger('end');
+        self.started = false;
+        return;
+      } else {
+        self.timer = requestAnimationFrame(function() {
+          self.run();
+        });
       }
+      self.currFrame++;
+      setStyle(item.node, item.source, item.to, self.t, self.duration);
+      self.events.trigger('move', [self.t, item.source, item.to]);
+    },
+    play:function(){
+      var self = this;
+      if(!self.started) return;
+      self.playTime = now();
+      self.endTime = self.endTime - self.stopTime + self.playTime;
+      self.stopTime = 0;
+      self.run(); 
     },
     replay: function() {
-      batch(this.queueItem);
-      this.play();
-      this.events.trigger('restart');
+      var self = this;
+      self.currFrame = 0;
+      cancelAnimationFrame(self.timer);
+      self.start();
     },
-    play: function() {
+    start: function() {
       var item = this.queueItem,
-      endTime = new Date().valueOf() + item.duration,
       self = this;
-      var _ = function() {
-        var now = new Date().valueOf();
-        var t = endTime - now;
-        setStyle(item.node, item.source, item.to, t, item.duration);
-        self.events.trigger('move',[t,item.source,item.to]);
-        if (t < 0) {
-          if (item.cb) item.cb();
-          self.events.trigger('end');
-        } else {
-          self.timer = requestAnimationFrame(_);
-        }
-      };
-      _();
+      self.startTime = now();
+      self.endTime = self.startTime + self.duration;
+      self.frames = Math.ceil(self.duration * self.fps / 1000);
+      this.started = true;
+      self.run();
     }
   };
 
   global.Amazing = Amazing;
 
 })(this);
+

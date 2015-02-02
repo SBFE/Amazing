@@ -4,6 +4,7 @@
     <div style="background:red;" id="test"></div>
     <div style="background:#000;" id="test2"></div>
     <div style="position:absolute;left:200px;top:200px;">
+    <input type="button" value="start" id="start">
     <input type="button" value="stop" id="stop">
     <input type="button" value="play" id="play">
     <input type="button" value="replay" id="replay">
@@ -59,6 +60,10 @@
           console.log('end');
         }
       });
+
+      $('start').onclick = function(){
+        move1.start(); 
+      };
       $('play').onclick = function(){
         move1.play(); 
       };
