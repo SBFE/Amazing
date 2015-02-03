@@ -31,8 +31,8 @@
     return v;
   };
 
-  function setToStyle(node,to){
-    for(var i in to){
+  function setToStyle(node, to) {
+    for (var i in to) {
       node.style[i] = to[i];
     }
   }
@@ -71,6 +71,40 @@
       }
       node.style[i] = setvalue;
     }
+  }
+
+  function clone(obj) {
+    var copy;
+
+    // Handle the 3 simple types, and null or undefined
+    if (null === obj || "object" != typeof obj) return obj;
+
+    // Handle Date
+    if (obj instanceof Date) {
+      copy = new Date();
+      copy.setTime(obj.getTime());
+      return copy;
+    }
+
+    // Handle Array
+    if (obj instanceof Array) {
+      copy = [];
+      for (var i = 0, len = obj.length; i < len; i++) {
+        copy[i] = clone(obj[i]);
+      }
+      return copy;
+    }
+
+    // Handle Object
+    if (obj instanceof Object) {
+      copy = {};
+      for (var attr in obj) {
+        if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
+      }
+      return copy;
+    }
+
+    throw new Error("Unable to copy obj! Its type isn't supported.");
   }
 
   //https://gist.github.com/paulirish/1579671 
@@ -176,7 +210,7 @@
     var t = this.endTime - now();
     if (this.currFrame === this.frames) {
       //有偏差->一次性设置成to得状态
-      setToStyle(item.node,item.to);  
+      setToStyle(item.node, item.to);
       if (item.cb) item.cb();
       setEnd.call(this);
       return;
@@ -229,41 +263,7 @@
     }
   };
 
-  function clone(obj) {
-    var copy;
-
-    // Handle the 3 simple types, and null or undefined
-    if (null === obj || "object" != typeof obj) return obj;
-
-    // Handle Date
-    if (obj instanceof Date) {
-      copy = new Date();
-      copy.setTime(obj.getTime());
-      return copy;
-    }
-
-    // Handle Array
-    if (obj instanceof Array) {
-      copy = [];
-      for (var i = 0, len = obj.length; i < len; i++) {
-        copy[i] = clone(obj[i]);
-      }
-      return copy;
-    }
-
-    // Handle Object
-    if (obj instanceof Object) {
-      copy = {};
-      for (var attr in obj) {
-        if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
-      }
-      return copy;
-    }
-
-    throw new Error("Unable to copy obj! Its type isn't supported.");
-  }
 
   global.Amazing = Amazing;
 
 })(this);
-
