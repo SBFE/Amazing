@@ -6,6 +6,20 @@
 
 (function(global, doc, undef) {
 
+  var bind = global.addEventListener ? 'addEventListener': 'attachEvent',
+  unbind = global.removeEventListener ? 'removeEventListener': 'detachEvent',
+  prefix = bind !== 'addEventListener' ? 'on': '';
+
+  function addEvent(el, type, fn, capture) {
+    el[bind](prefix + type, fn, capture || false);
+    return fn;
+  }
+
+  function removeEvent(el, type, fn, capture) {
+    el[unbind](prefix + type, fn, capture || false);
+    return fn;
+  }
+
   var beforeStyle = ['webkit', 'Moz', 'ms', 'O', ''];
 
   var watch = ['transitionend', 'webkitTransitionEnd', 'oTransitionEnd', 'MSTransitionEnd', 'animationend', 'webkitAnimationEnd', 'oAnimationEnd', 'MSAnimationEnd'];
@@ -82,7 +96,7 @@
       if (!source[i]) {
         source[i] = getSourceStyle(node, i);
       }
-      //判断透明度，color
+      //判断透明度,opacity,color,width
       if ((/color/i).test(i)) { //只转换一次,做标记
         curto = toRGBA(to[i]);
         curso = toRGBA(source[i]);
@@ -233,6 +247,16 @@
     setToStyle(this.queueItem.node, this.queueItem.source);
   }
 
+  function onceEvent(node, cb) {
+    for (var k = 0; k < watch.length; k++) { (function(k) {
+        addEvent(node, watch[k], function(e) {
+          removeEvent(node, watch[k]);
+          if (cb) cb(e);
+        });
+      })(k);
+    }
+  }
+
   function now() {
     return new Date().valueOf();
   }
@@ -319,15 +343,27 @@
     Amazing.prototype = {
       constructor: Amazing,
       start: function() {
-        var item = this.queueItem;
+        var item = this.queueItem,
+        self = this;
         this.startTime = now();
         this.endTime = this.startTime + this.duration;
+        var tolen = 0;
         for (var i in item.to) {
+          tolen++;
           this.props[i] = item.to[i];
         }
         setVendorPreperty.call(this, 'transition-duration', this.duration);
         setVendorPreperty.call(this, 'transition-timing-function', item.ease);
         setCss3Style.call(this, item);
+        var ekey = 0;
+        onceEvent(item.node, function(e) {
+          if (e.propertyName in self.queueItem.to) {
+            ekey++;
+            if (ekey === tolen && self.queueItem.cb) {
+              self.queueItem.cb();
+            }
+          }
+        });
       },
       restart: function() {
         setToStyle(this.queueItem.node, this.queueItem.source);
