@@ -6,20 +6,6 @@
 
 (function(global, doc, undef) {
 
-  var bind = global.addEventListener ? 'addEventListener': 'attachEvent',
-  unbind = global.removeEventListener ? 'removeEventListener': 'detachEvent',
-  prefix = bind !== 'addEventListener' ? 'on': '';
-
-  function addEvent(el, type, fn, capture) {
-    el[bind](prefix + type, fn, capture || false);
-    return fn;
-  }
-
-  function removeEvent(el, type, fn, capture) {
-    el[unbind](prefix + type, fn, capture || false);
-    return fn;
-  }
-
   var beforeStyle = ['webkit', 'Moz', 'ms', 'O', ''];
 
   var watch = ['transitionend', 'webkitTransitionEnd', 'oTransitionEnd', 'MSTransitionEnd', 'animationend', 'webkitAnimationEnd', 'oAnimationEnd', 'MSAnimationEnd'];
@@ -40,6 +26,7 @@
     return true;
   } ();
 
+  //hasCss3 = false;
   var easeings = {
     swing: function(x, t, b, c, d) {
       return this.easeInQuad(x, t, b, c, d);
@@ -247,16 +234,6 @@
     setToStyle(this.queueItem.node, this.queueItem.source);
   }
 
-  function onceEvent(node, cb) {
-    for (var k = 0; k < watch.length; k++) { (function(k) {
-        addEvent(node, watch[k], function(e) {
-          removeEvent(node, watch[k]);
-          if (cb) cb(e);
-        });
-      })(k);
-    }
-  }
-
   function now() {
     return new Date().valueOf();
   }
@@ -347,23 +324,15 @@
         self = this;
         this.startTime = now();
         this.endTime = this.startTime + this.duration;
-        var tolen = 0;
         for (var i in item.to) {
-          tolen++;
-          this.props[i] = item.to[i];
+         this.props[i] = item.to[i];
         }
         setVendorPreperty.call(this, 'transition-duration', this.duration);
         setVendorPreperty.call(this, 'transition-timing-function', item.ease);
         setCss3Style.call(this, item);
-        var ekey = 0;
-        onceEvent(item.node, function(e) {
-          if (e.propertyName in self.queueItem.to) {
-            ekey++;
-            if (ekey === tolen && self.queueItem.cb) {
-              self.queueItem.cb();
-            }
-          }
-        });
+        self.after = setTimeout(function(){
+            self.queueItem.cb && self.queueItem.cb(); 
+        },this.duration);
       },
       restart: function() {
         setToStyle(this.queueItem.node, this.queueItem.source);
@@ -371,10 +340,13 @@
         this.start();
       },
       play: function() {
-        var item = this.queueItem;
+        var item = this.queueItem,self = this;
         setVendorPreperty.call(this, 'transition-duration', this.endTime - this.stopTime);
         setVendorPreperty.call(this, 'transition-timing-function', item.ease);
         setCss3Style.call(this, item);
+        self.after = setTimeout(function(){
+            self.queueItem.cb && self.queueItem.cb(); 
+        },this.endTime - this.stopTime);
         this.stopTime = 0;
       },
       stop: function() {
@@ -389,6 +361,7 @@
       },
       cancel: function() {
         var el = this.queueItem.node;
+        clearTimeout(this.after);
         el.style.webkitTransitionDuration = el.style.mozTransitionDuration = el.style.msTransitionDuration = el.style.oTransitionDuration = '';
         //触发回流重置动画
         el.clientLeft = el.clientLeft;

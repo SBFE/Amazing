@@ -1,7 +1,7 @@
 <html>
   <head></head>
   <body>
-    <div style="background:red;width:500px;height:500px;" id="test"></div>
+    <div style="opacity:0.5;background:#fff;width:500px;height:500px;color:#ccc;font-size:12px;" id="test">abcdefg</div>
     <div style="background:#000;" id="test2"></div>
     <div style="position:absolute;left:200px;top:200px;">
     <input type="button" value="start" id="start">
@@ -54,8 +54,12 @@
           width: '100px'
         },
         to: {
+          'font-size':'23px',
+          opacity:1,
+          background:'#CC001E',
+          color:'#fff',
           width:'300px',
-          height:'300px',
+          height:'300px'
         },
         duration: 4000,
         callback:function(){
