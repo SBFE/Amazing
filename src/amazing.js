@@ -155,21 +155,34 @@
       if (!source[i]) {
         source[i] = getSourceStyle(node, i);
       }
-      //判断透明度,opacity,color,width
+      //判断透明度,opacity,color,width,height:auto -> 需要修复
+      var x = (1 - (t / duration)).toFixed(1);
       if ((/color/i).test(i)) {
         //只转换一次,做标记
         curso = getRGB(source[i]);
         curto = getRGB(to[i]);
         target = {};
-        target.r = Math.abs(easeings[ease]((1 - (t / duration)).toFixed(1), duration - t, curso[0], curto[0] - curso[0], duration));
-        target.g = Math.abs(easeings[ease]((1 - (t / duration)).toFixed(1), duration - t, curso[1], curto[1] - curso[1], duration));
-        target.b = Math.abs(easeings[ease]((1 - (t / duration)).toFixed(1), duration - t, curso[2], curto[2] - curso[2], duration));
+        target.r = Math.abs(easeings[ease](x, duration - t, curso[0], curto[0] - curso[0], duration));
+        target.g = Math.abs(easeings[ease](x, duration - t, curso[1], curto[1] - curso[1], duration));
+        target.b = Math.abs(easeings[ease](x, duration - t, curso[2], curto[2] - curso[2], duration));
         node.style[i] = 'rgb(' + parseInt(target.r, 10) + ',' + parseInt(target.g, 10) + ',' + parseInt(target.b, 10) + ')';
+      }else if((/opacity/i).test(i)){
+        curso = source[i] * 100;  
+        curto = to[i] * 100;
+        target = easeings[ease](x,duration - t,curso,curto-curso,duration);
+        target = Math.min((target / 100).toFixed(1),1);
+        if(i.toLowerCase() !== 'opacity'){
+          target = 'alpha(opacity='+(target * 100)+');'; 
+          console.log(target);
+          node.style['filter'] = target;
+        }else{
+          node.style[i] = target;
+        }
       } else {
         units = ((/\d(\D+)$/).exec(to[i]) || (/\d(\D+)$/).exec(source[i]) || [0, 0])[1]; //units (px, %)
         curto = parseInt(to[i], 10);
         curso = parseInt(source[i], 10);
-        target = easeings[ease]((1 - (t / duration)).toFixed(1), duration - t, curso, curto - curso, duration);
+        target = easeings[ease](x, duration - t, curso, curto - curso, duration);
         target += units;
         node.style[i] = target;
       }
