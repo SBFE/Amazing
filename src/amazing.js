@@ -140,7 +140,7 @@
     source = source ? source: {};
     var curto, curso, target, setvalue, units;
     var x = (1 - (t / duration)).toFixed(1);
-    var fn = easings[ease];
+    var fn = Amazing.easings ? Amazing.easings[ease] : easings[ease];
     for (var i in to) {
       if (!source[i]) {
         source[i] = getSourceStyle(node, i);
@@ -472,7 +472,7 @@
     this.restart();
   };
 
-  var easings = Amazing.easings || {
+  var easings = {
     swing: function(x, t, b, c, d) {
       return this.easeInQuad(x, t, b, c, d);
     },
