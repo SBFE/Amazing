@@ -5,7 +5,7 @@ A javascript animation class.
 
 Amazing use CSS3 transition in advanced browser and has been backward compatibility.
 
----
+-
 
 ### Usage
 
