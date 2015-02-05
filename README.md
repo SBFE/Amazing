@@ -1,5 +1,5 @@
-## Amazing
-=======
+### Amazing
+---
 
 A javascript animation class.
 
