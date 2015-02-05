@@ -166,22 +166,21 @@
         target.g = Math.abs(easeings[ease](x, duration - t, curso[1], curto[1] - curso[1], duration));
         target.b = Math.abs(easeings[ease](x, duration - t, curso[2], curto[2] - curso[2], duration));
         node.style[i] = 'rgb(' + parseInt(target.r, 10) + ',' + parseInt(target.g, 10) + ',' + parseInt(target.b, 10) + ')';
-      }else if((/opacity/i).test(i)){
-        curso = source[i] * 100;  
+      } else if ((/opacity/i).test(i)) {
+        curso = source[i] * 100;
         curto = to[i] * 100;
-        target = easeings[ease](x,duration - t,curso,curto-curso,duration);
-        target = Math.min((target / 100).toFixed(1),1);
-        if(i.toLowerCase() !== 'opacity'){
-          target = 'alpha(opacity='+(target * 100)+');'; 
-          console.log(target);
+        target = easeings[ease](x, duration - t, curso, curto - curso, duration);
+        target = Math.min((target / 100).toFixed(1), 1);
+        if (i.toLowerCase() !== 'opacity') {
+          target = 'alpha(opacity=' + (target * 100) + ');';
           node.style['filter'] = target;
-        }else{
+        } else {
           node.style[i] = target;
         }
       } else {
         units = ((/\d(\D+)$/).exec(to[i]) || (/\d(\D+)$/).exec(source[i]) || [0, 0])[1]; //units (px, %)
-        curto = parseInt(to[i], 10);
         curso = parseInt(source[i], 10);
+        curto = parseInt(to[i], 10);
         target = easeings[ease](x, duration - t, curso, curto - curso, duration);
         target += units;
         node.style[i] = target;
@@ -258,7 +257,27 @@
     }
   }
 
-  function expand(pros) {
+  function getPx(node, style, val) {
+    var s = style.toLowerCase();
+    var oldval = getSourceStyle(node, s);
+    var ret;
+    node.style[s] = val;
+    ret = node['client' + style];
+    node.style[s] = oldval;
+    return ret;
+  }
+
+  function fixWidth(val, node) {
+    var px = getPx(node, 'Width', val);
+    return px + 'px';
+  }
+
+  function fixHeght(val, node) {
+    var px = getPx(node, 'Height', val);
+    return px + 'px';
+  }
+
+  function expand(pros, node) {
     //font,background直接翻译成backgroundColor 简写不支持
     var fixs = {
       'margin': function(val) {
@@ -285,6 +304,8 @@
         delete pros[pro];
       }
     }
+    if (pros.width && ! hasCss3) pros.width = fixWidth(pros.width, node);
+    if (pros.height && ! hasCss3) pros.height = fixHeght(pros.height, node);
   }
 
   function configure(params) {
@@ -311,9 +332,9 @@
       var style = this.queueItem.to[i];
       if (!this.queueItem.source[i]) this.queueItem.source[i] = getSourceStyle(this.queueItem.node, i);
     }
-    expand(this.queueItem.source);
-    expand(this.queueItem.to);
-    //setToStyle(this.queueItem.node, this.queueItem.source);
+    expand(this.queueItem.source, this.queueItem.node);
+    expand(this.queueItem.to, this.queueItem.node);
+    setToStyle(this.queueItem.node, this.queueItem.source);
   }
 
   function now() {
@@ -334,7 +355,7 @@
     var t = this.endTime - now();
     if (this.currFrame === this.frames) {
       //有偏差->一次性设置成to得状态
-      //setToStyle(item.node, item.to);
+      setToStyle(item.node, item.to);
       if (item.cb) item.cb();
       setEnd.call(this);
       return;
