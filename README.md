@@ -39,7 +39,6 @@ var animation = new Amazing({
 //API
 /**
 * animation.start();
-* animation.restart();
 * animation.pause();
 * animation.resume();
 * animation.cancel();

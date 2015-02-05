@@ -293,8 +293,8 @@
         delete pros[pro];
       }
     }
-    if (pros.width && ! hasCss3) pros.width = fixWidth(pros.width, node);
-    if (pros.height && ! hasCss3) pros.height = fixHeght(pros.height, node);
+    if (pros.width) pros.width = fixWidth(pros.width, node);
+    if (pros.height) pros.height = fixHeght(pros.height, node);
   }
 
   function configure(params) {
@@ -312,8 +312,6 @@
     this.fps = params.fps || 60;
     this.duration = params.duration || 500;
     this.timer = null;
-    this.isrun = false;
-    this.end = false;
     this.playTime = this.stopTime = this.currFrame = 0;
     this.props = {};
     //把原始的和设置的source合并
@@ -330,23 +328,16 @@
     return new Date().valueOf();
   }
 
-  function setEnd() {
-    this.isrun = false;
-    this.end = true;
-  }
-
   function run() {
     var item = this.queueItem,
     self = this;
-
-    this.isrun = true;
 
     var t = this.endTime - now();
     if (this.currFrame === this.frames) {
       //有偏差->一次性设置成to得状态
       setToStyle(item.node, item.to);
+      this.started = false;
       if (item.cb) item.cb();
-      setEnd.call(this);
       return;
     } else {
       this.timer = requestAnimationFrame(function() {
@@ -360,33 +351,33 @@
   Amazing.prototype = {
     constructor: Amazing,
     start: function(cb) {
-      if (this.isrun || this.end) return;
+      if(this.started) return;
+      else this.cancel();
+      this.started = true;
       this.startTime = now();
       this.endTime = this.startTime + this.duration;
       this.frames = Math.ceil(this.duration * this.fps / 1000);
       run.call(this);
     },
-    restart: function() {
-      this.cancel();
-      this.end = false;
-      this.start();
-    },
     resume: function() {
-      if (this.isrun || this.end) return;
+      if(!this.paused) return;
+      this.paused = false;
       this.playTime = now();
       this.endTime = this.endTime - this.stopTime + this.playTime;
       this.stopTime = 0;
       run.call(this);
     },
     pause: function() {
-      this.isrun = false;
+      if(this.paused) return;
+      this.paused = true;
       cancelAnimationFrame(this.timer);
       this.stopTime = now();
     },
     cancel: function() {
       this.currFrame = 0;
       cancelAnimationFrame(this.timer);
-      setEnd.call(this);
+      setToStyle(this.queueItem.node, this.queueItem.source);
+      this.started = this.paused = false;
     }
   };
 
@@ -412,6 +403,9 @@
     Amazing.prototype = {
       constructor: Amazing,
       start: function() {
+        if(this.started) return;
+        else this.cancel();
+        this.started = true;
         var item = this.queueItem,
         self = this;
         this.startTime = now();
@@ -424,15 +418,13 @@
         setCss3Style.call(this, item);
         self.after = setTimeout(function() {
           self.queueItem.cb && self.queueItem.cb();
+          self.started = false;
         },
         this.duration);
       },
-      restart: function() {
-        setToStyle(this.queueItem.node, this.queueItem.source);
-        this.cancel();
-        this.start();
-      },
       resume: function() {
+        if(!this.paused) return;
+        this.paused = false;
         var item = this.queueItem,
         self = this;
         setVendorPreperty.call(this, 'transition-duration', this.endTime - this.stopTime);
@@ -440,11 +432,14 @@
         setCss3Style.call(this, item);
         self.after = setTimeout(function() {
           self.queueItem.cb && self.queueItem.cb();
+          self.started = false;
         },
         this.endTime - this.stopTime);
         this.stopTime = 0;
       },
       pause: function() {
+        if(this.paused) return;
+        this.paused = true;
         var el = this.queueItem.node;
         var current = {};
         for (var i in this.queueItem.to) {
@@ -459,7 +454,9 @@
         clearTimeout(this.after);
         el.style.webkitTransitionDuration = el.style.mozTransitionDuration = el.style.msTransitionDuration = el.style.oTransitionDuration = '';
         //触发回流重置动画
+        setToStyle(this.queueItem.node, this.queueItem.source);
         el.clientLeft = el.clientLeft;
+        this.started = this.paused = false;
       }
     };
   }
@@ -474,7 +471,7 @@
 
   var easings = {
     swing: function(x, t, b, c, d) {
-      return this.easeInQuad(x, t, b, c, d);
+      return easings.easeInQuad(x, t, b, c, d);
     },
     easeInQuad: function(x, t, b, c, d) {
       return c * (t /= d) * t + b;
