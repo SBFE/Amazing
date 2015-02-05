@@ -5,8 +5,8 @@
     <div style="background:#000;" id="test2"></div>
     <div style="position:absolute;left:200px;top:200px;">
     <input type="button" value="start" id="start">
-    <input type="button" value="stop" id="stop">
-    <input type="button" value="play" id="play">
+    <input type="button" value="pause" id="pause">
+    <input type="button" value="resume" id="resume">
     <input type="button" value="restart" id="restart">
     <input type="button" value="cancel" id="cancel">
     <input type="button" value="reverse" id="reverse">
@@ -76,10 +76,10 @@
         move1.start(); 
       };
       $('play').onclick = function(){
-        move1.play(); 
+        move1.resume(); 
       };
       $('stop').onclick = function(){
-        move1.stop(); 
+        move1.pause(); 
       };
       $('restart').onclick = function(){
         move1.restart(); 

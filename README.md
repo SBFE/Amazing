@@ -1,29 +1,53 @@
-Amazing
+## Amazing
 =======
 
-Amazing effect framework library
+A javascript animation class.
 
-一个管理css特效和结构依赖特效的核心core，它小巧轻便，不依赖任何框架库，可根据使用者要求定制，或扩展。
+Amazing use CSS3 transition in advanced browser and has been backward compatibility.
 
 ---
 
-Usage
+### Usage
+
+```html
+<script src="amazing.js"></script>
+<script src="easings.js"></script> <!-- optional -->
+```
+
+```js
+var animation = new Amazing({
+    node:document.getElementById('animation'),
+    source:{
+      width:'10%',
+      opacity:0.2,
+      height:'auto'
+    },
+    to:{
+     'font-size':'40px',
+     opacity:1,
+     color:'#000',
+     'background-color':'blue',
+     width:'auto',
+     height:'300px'
+    },
+    duration:4000,
+    callback:function(){
+      console.log('animation end');
+    }
+  });
+
+//API
+/**
+* animation.start();
+* animation.restart();
+* animation.pause();
+* animation.resume();
+* animation.cancel();
+* animation.reverse();
+*/
 
 ```
-var test = new Amazing(document.getElementById("test"));
-test.animate({
-  to:{
-    width:"10px"
-  }
-  source:{
-    width:"0px" //默认或指定
-  },
-  duration:5000,
-  easing:"easeInCubic"
-}).wait(1000).animate({to:{width:"50%"}});
 
-//也可以中途暂停和继续动画
-test.pause();
-test.begin();
+### License
 
-```
+MIT License

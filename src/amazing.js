@@ -22,20 +22,12 @@
   var Ts = getProStyleName('Transform');
 
   var hasCss3 = function() {
-    if (!window.getComputedStyle || ! Ts) return false;
+    if (!global.getComputedStyle || ! Ts) return false;
     return true;
   } ();
 
   hasCss3 = false;
 
-  var easeings = {
-    swing: function(x, t, b, c, d) {
-      return this.easeInQuad(x, t, b, c, d);
-    },
-    easeInQuad: function(x, t, b, c, d) {
-      return c * (t /= d) * t + b;
-    }
-  };
 
   // Parse strings looking for color tuples [255,255,255]
   function getRGB(color) {
@@ -162,14 +154,14 @@
         curso = getRGB(source[i]);
         curto = getRGB(to[i]);
         target = {};
-        target.r = Math.abs(easeings[ease](x, duration - t, curso[0], curto[0] - curso[0], duration));
-        target.g = Math.abs(easeings[ease](x, duration - t, curso[1], curto[1] - curso[1], duration));
-        target.b = Math.abs(easeings[ease](x, duration - t, curso[2], curto[2] - curso[2], duration));
+        target.r = Math.abs(easings[ease](x, duration - t, curso[0], curto[0] - curso[0], duration));
+        target.g = Math.abs(easings[ease](x, duration - t, curso[1], curto[1] - curso[1], duration));
+        target.b = Math.abs(easings[ease](x, duration - t, curso[2], curto[2] - curso[2], duration));
         node.style[i] = 'rgb(' + parseInt(target.r, 10) + ',' + parseInt(target.g, 10) + ',' + parseInt(target.b, 10) + ')';
       } else if ((/opacity/i).test(i)) {
         curso = source[i] * 100;
         curto = to[i] * 100;
-        target = easeings[ease](x, duration - t, curso, curto - curso, duration);
+        target = easings[ease](x, duration - t, curso, curto - curso, duration);
         target = Math.min((target / 100).toFixed(1), 1);
         if (i.toLowerCase() !== 'opacity') {
           target = 'alpha(opacity=' + (target * 100) + ');';
@@ -181,7 +173,7 @@
         units = ((/\d(\D+)$/).exec(to[i]) || (/\d(\D+)$/).exec(source[i]) || [0, 0])[1]; //units (px, %)
         curso = parseInt(source[i], 10);
         curto = parseInt(to[i], 10);
-        target = easeings[ease](x, duration - t, curso, curto - curso, duration);
+        target = easings[ease](x, duration - t, curso, curto - curso, duration);
         target += units;
         node.style[i] = target;
       }
@@ -225,16 +217,16 @@
   //https://gist.github.com/paulirish/1579671 
   var lastTime = 0;
   var vendors = ['ms', 'moz', 'webkit', 'o'];
-  for (var x = 0; x < vendors.length && ! window.requestAnimationFrame; ++x) {
-    window.requestAnimationFrame = window[vendors[x] + 'RequestAnimationFrame'];
-    window.cancelAnimationFrame = window[vendors[x] + 'CancelAnimationFrame'] || window[vendors[x] + 'CancelRequestAnimationFrame'];
+  for (var x = 0; x < vendors.length && ! global.requestAnimationFrame; ++x) {
+    global.requestAnimationFrame = global[vendors[x] + 'RequestAnimationFrame'];
+    global.cancelAnimationFrame = global[vendors[x] + 'CancelAnimationFrame'] || global[vendors[x] + 'CancelRequestAnimationFrame'];
   }
 
-  if (!window.requestAnimationFrame) {
-    window.requestAnimationFrame = function(callback, element) {
+  if (!global.requestAnimationFrame) {
+    global.requestAnimationFrame = function(callback, element) {
       var currTime = new Date().getTime();
       var timeToCall = Math.max(0, 16 - (currTime - lastTime));
-      var id = window.setTimeout(function() {
+      var id = setTimeout(function() {
         callback(currTime + timeToCall);
       },
       timeToCall);
@@ -243,8 +235,8 @@
     };
   }
 
-  if (!window.cancelAnimationFrame) {
-    window.cancelAnimationFrame = function(id) {
+  if (!global.cancelAnimationFrame) {
+    global.cancelAnimationFrame = function(id) {
       clearTimeout(id);
     };
   }
@@ -382,14 +374,14 @@
       this.end = false;
       this.start();
     },
-    play: function() {
+    resume: function() {
       if (this.isrun || this.end) return;
       this.playTime = now();
       this.endTime = this.endTime - this.stopTime + this.playTime;
       this.stopTime = 0;
       run.call(this);
     },
-    stop: function() {
+    pause: function() {
       this.isrun = false;
       cancelAnimationFrame(this.timer);
       this.stopTime = now();
@@ -443,7 +435,7 @@
         this.cancel();
         this.start();
       },
-      play: function() {
+      resume: function() {
         var item = this.queueItem,
         self = this;
         setVendorPreperty.call(this, 'transition-duration', this.endTime - this.stopTime);
@@ -455,7 +447,7 @@
         this.endTime - this.stopTime);
         this.stopTime = 0;
       },
-      stop: function() {
+      resume: function() {
         var el = this.queueItem.node;
         var current = {};
         for (var i in this.queueItem.to) {
@@ -483,7 +475,15 @@
     this.restart();
   };
 
+  var easings = Amazing.easings || {
+    swing: function(x, t, b, c, d) {
+      return this.easeInQuad(x, t, b, c, d);
+    },
+    easeInQuad: function(x, t, b, c, d) {
+      return c * (t /= d) * t + b;
+    }
+  };
+
   global.Amazing = Amazing;
 
 })(this, document);
-

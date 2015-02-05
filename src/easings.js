@@ -155,6 +155,6 @@ var easings = {
   }
 };
 
-  global.easings = easings;
+  if(global.Amazing) global.Amazing.easings = easings;
 
 })(this);
