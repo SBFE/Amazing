@@ -8,8 +8,6 @@
 
   var beforeStyle = ['webkit', 'Moz', 'ms', 'O', ''];
 
-  var watch = ['transitionend', 'webkitTransitionEnd', 'oTransitionEnd', 'MSTransitionEnd', 'animationend', 'webkitAnimationEnd', 'oAnimationEnd', 'MSAnimationEnd'];
-
   function getProStyleName(pro) {
     var el = doc.createElement('p');
     for (var i = 0; i < beforeStyle.length; i++) {
@@ -25,8 +23,6 @@
     if (!global.getComputedStyle || ! Ts) return false;
     return true;
   } ();
-
-  hasCss3 = false;
 
 
   // Parse strings looking for color tuples [255,255,255]
@@ -143,25 +139,26 @@
   function setStyle(node, source, to, t, duration, ease) {
     source = source ? source: {};
     var curto, curso, target, setvalue, units;
+    var x = (1 - (t / duration)).toFixed(1);
+    var fn = easings[ease];
     for (var i in to) {
       if (!source[i]) {
         source[i] = getSourceStyle(node, i);
       }
       //判断透明度,opacity,color,width,height:auto -> 需要修复
-      var x = (1 - (t / duration)).toFixed(1);
       if ((/color/i).test(i)) {
         //只转换一次,做标记
         curso = getRGB(source[i]);
         curto = getRGB(to[i]);
         target = {};
-        target.r = Math.abs(easings[ease](x, duration - t, curso[0], curto[0] - curso[0], duration));
-        target.g = Math.abs(easings[ease](x, duration - t, curso[1], curto[1] - curso[1], duration));
-        target.b = Math.abs(easings[ease](x, duration - t, curso[2], curto[2] - curso[2], duration));
+        target.r = Math.abs(fn(x, duration - t, curso[0], curto[0] - curso[0], duration));
+        target.g = Math.abs(fn(x, duration - t, curso[1], curto[1] - curso[1], duration));
+        target.b = Math.abs(fn(x, duration - t, curso[2], curto[2] - curso[2], duration));
         node.style[i] = 'rgb(' + parseInt(target.r, 10) + ',' + parseInt(target.g, 10) + ',' + parseInt(target.b, 10) + ')';
       } else if ((/opacity/i).test(i)) {
         curso = source[i] * 100;
         curto = to[i] * 100;
-        target = easings[ease](x, duration - t, curso, curto - curso, duration);
+        target = fn(x, duration - t, curso, curto - curso, duration);
         target = Math.min((target / 100).toFixed(1), 1);
         if (i.toLowerCase() !== 'opacity') {
           target = 'alpha(opacity=' + (target * 100) + ');';
@@ -173,7 +170,7 @@
         units = ((/\d(\D+)$/).exec(to[i]) || (/\d(\D+)$/).exec(source[i]) || [0, 0])[1]; //units (px, %)
         curso = parseInt(source[i], 10);
         curto = parseInt(to[i], 10);
-        target = easings[ease](x, duration - t, curso, curto - curso, duration);
+        target = fn(x, duration - t, curso, curto - curso, duration);
         target += units;
         node.style[i] = target;
       }
@@ -447,7 +444,7 @@
         this.endTime - this.stopTime);
         this.stopTime = 0;
       },
-      resume: function() {
+      pause: function() {
         var el = this.queueItem.node;
         var current = {};
         for (var i in this.queueItem.to) {
