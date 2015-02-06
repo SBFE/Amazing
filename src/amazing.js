@@ -459,7 +459,7 @@
     var source = clone(this.queueItem.source);
     this.queueItem.source = to;
     this.queueItem.to = source;
-    this.restart();
+    this.start();
   };
 
   var easings = {
