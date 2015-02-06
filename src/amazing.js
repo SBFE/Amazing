@@ -24,9 +24,6 @@
     return true;
   } ();
 
-  hasCss3 = false;
-
-
   // Parse strings looking for color tuples [255,255,255]
   function getRGB(color) {
     var result;
@@ -118,19 +115,6 @@
   function setToStyle(node, to) {
     for (var i in to) {
       node.style[i] = to[i];
-    }
-  }
-
-  function getStyle(node) {
-    if (getComputedStyle) {
-      var css = getComputedStyle(node),
-      rules = {};
-      for (var i = 0; i < css.length; i++) {
-        rules[css[i]] = css.getPropertyValue(css[i]);
-      }
-      return rules;
-    } else {
-      return node.currentStyle;
     }
   }
 
@@ -421,6 +405,7 @@
         self.after = setTimeout(function() {
           self.queueItem.cb && self.queueItem.cb();
           self.started = false;
+          removeTransition(self.queueItem.node);
         },
         this.duration);
       },
@@ -435,6 +420,7 @@
         self.after = setTimeout(function() {
           self.queueItem.cb && self.queueItem.cb();
           self.started = false;
+          removeTransition(self.queueItem.node);
         },
         this.endTime - this.stopTime);
         this.stopTime = 0;
@@ -454,13 +440,18 @@
       cancel: function() {
         var el = this.queueItem.node;
         clearTimeout(this.after);
-        el.style.webkitTransitionDuration = el.style.mozTransitionDuration = el.style.msTransitionDuration = el.style.oTransitionDuration = '';
+        removeTransition(el);
         //触发回流重置动画
         setToStyle(this.queueItem.node, this.queueItem.source);
         el.clientLeft = el.clientLeft;
         this.started = this.paused = false;
       }
     };
+  }
+
+  function removeTransition(el){
+    el.style.webkitTransitionDuration = el.style.mozTransitionDuration = el.style.msTransitionDuration = el.style.oTransitionDuration = '';
+    el.style.webkitTransitionTimingFunction = el.style.mozTransitionTimingFunction = el.style.msTransitionTimingFunction = el.style.oTransitionTimingFunction = '';
   }
 
   Amazing.prototype.reverse = function() {
