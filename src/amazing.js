@@ -24,6 +24,8 @@
     return true;
   } ();
 
+  hasCss3 = false;
+
 
   // Parse strings looking for color tuples [255,255,255]
   function getRGB(color) {
@@ -139,8 +141,7 @@
   function setStyle(node, source, to, t, duration, ease) {
     source = source ? source: {};
     var curto, curso, target, setvalue, units;
-    var x = (1 - (t / duration)).toFixed(1);
-    var fn = Amazing.easings ? Amazing.easings[ease] : easings[ease];
+    var fn = global.AmazingEasings ? global.AmazingEasings[ease] : easings[ease];
     for (var i in to) {
       if (!source[i]) {
         source[i] = getSourceStyle(node, i);
@@ -151,14 +152,14 @@
         curso = getRGB(source[i]);
         curto = getRGB(to[i]);
         target = {};
-        target.r = Math.abs(fn(x, duration - t, curso[0], curto[0] - curso[0], duration));
-        target.g = Math.abs(fn(x, duration - t, curso[1], curto[1] - curso[1], duration));
-        target.b = Math.abs(fn(x, duration - t, curso[2], curto[2] - curso[2], duration));
+        target.r = fn(duration - t, curso[0], curto[0] - curso[0], duration);
+        target.g = fn(duration - t, curso[1], curto[1] - curso[1], duration);
+        target.b = fn(duration - t, curso[2], curto[2] - curso[2], duration);
         node.style[i] = 'rgb(' + parseInt(target.r, 10) + ',' + parseInt(target.g, 10) + ',' + parseInt(target.b, 10) + ')';
       } else if ((/opacity/i).test(i)) {
         curso = source[i] * 100;
         curto = to[i] * 100;
-        target = fn(x, duration - t, curso, curto - curso, duration);
+        target = fn(duration - t, curso, curto - curso, duration);
         target = Math.min((target / 100).toFixed(1), 1);
         if (i.toLowerCase() !== 'opacity') {
           target = 'alpha(opacity=' + (target * 100) + ');';
@@ -170,7 +171,7 @@
         units = ((/\d(\D+)$/).exec(to[i]) || (/\d(\D+)$/).exec(source[i]) || [0, 0])[1]; //units (px, %)
         curso = parseInt(source[i], 10);
         curto = parseInt(to[i], 10);
-        target = fn(x, duration - t, curso, curto - curso, duration);
+        target = fn(duration - t, curso, curto - curso, duration);
         target += units;
         node.style[i] = target;
       }
@@ -470,10 +471,10 @@
   };
 
   var easings = {
-    swing: function(x, t, b, c, d) {
-      return easings.easeInQuad(x, t, b, c, d);
+    swing: function(t, b, c, d) {
+      return easings.easeInQuad(t, b, c, d);
     },
-    easeInQuad: function(x, t, b, c, d) {
+    easeInQuad: function(t, b, c, d) {
       return c * (t /= d) * t + b;
     }
   };
