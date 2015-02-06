@@ -142,6 +142,7 @@
     source = source ? source: {};
     var curto, curso, target, setvalue, units;
     var fn = global.AmazingEasings ? global.AmazingEasings[ease] : easings[ease];
+    var curtime = duration - t;
     for (var i in to) {
       if (!source[i]) {
         source[i] = getSourceStyle(node, i);
@@ -152,14 +153,14 @@
         curso = getRGB(source[i]);
         curto = getRGB(to[i]);
         target = {};
-        target.r = fn(duration - t, curso[0], curto[0] - curso[0], duration);
-        target.g = fn(duration - t, curso[1], curto[1] - curso[1], duration);
-        target.b = fn(duration - t, curso[2], curto[2] - curso[2], duration);
+        target.r = fn(curtime, curso[0], curto[0] - curso[0], duration);
+        target.g = fn(curtime, curso[1], curto[1] - curso[1], duration);
+        target.b = fn(curtime, curso[2], curto[2] - curso[2], duration);
         node.style[i] = 'rgb(' + parseInt(target.r, 10) + ',' + parseInt(target.g, 10) + ',' + parseInt(target.b, 10) + ')';
       } else if ((/opacity/i).test(i)) {
         curso = source[i] * 100;
         curto = to[i] * 100;
-        target = fn(duration - t, curso, curto - curso, duration);
+        target = fn(curtime, curso, curto - curso, duration);
         target = Math.min((target / 100).toFixed(1), 1);
         if (i.toLowerCase() !== 'opacity') {
           target = 'alpha(opacity=' + (target * 100) + ');';
@@ -171,7 +172,7 @@
         units = ((/\d(\D+)$/).exec(to[i]) || (/\d(\D+)$/).exec(source[i]) || [0, 0])[1]; //units (px, %)
         curso = parseInt(source[i], 10);
         curto = parseInt(to[i], 10);
-        target = fn(duration - t, curso, curto - curso, duration);
+        target = fn(curtime, curso, curto - curso, duration);
         target += units;
         node.style[i] = target;
       }
@@ -471,6 +472,12 @@
   };
 
   var easings = {
+    /**
+     * t: current time（当前时间）；
+     * b: beginning value（初始值）；
+     * c: change in value（变化量）；
+     * d: duration（持续时间）。
+     */
     swing: function(t, b, c, d) {
       return easings.easeInQuad(t, b, c, d);
     },
