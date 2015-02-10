@@ -427,7 +427,6 @@
       },
       pause: function() {
         if(this.paused) return;
-        this.paused = true;
         var el = this.queueItem.node;
         var current = {};
         for (var i in this.queueItem.to) {
@@ -436,6 +435,7 @@
         this.cancel();
         setToStyle(el, current);
         this.stopTime = now();
+        this.paused = true;
       },
       cancel: function() {
         var el = this.queueItem.node;
